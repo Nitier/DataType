@@ -8,6 +8,9 @@
       "Nitier\\DataType\\": "src/"
     }
   },
+  "require": {
+    "php": ">=8.3"
+  },
   "autoload-dev": {
     "psr-4": {
       "Nitier\\DataType\\Tests\\": "test/"
