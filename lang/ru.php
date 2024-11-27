@@ -8,4 +8,5 @@ return [
     'AUTO_INCREMENT_NOT_ENABLED' => 'Автоинкремент не включён для этого поля.',
     'UNSIGNED_OVERFLOW' => 'Произошло переполнение для UNSIGNED.',
     'VALUE_MUST_BE_STRING' => 'Значение должно быть строкой.',
+    'VALUE_OUT_OF_RANGE' => 'Значение должно быть в диапазоне от {min} до {max}.',
 ];

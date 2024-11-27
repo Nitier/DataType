@@ -8,4 +8,5 @@ return [
     'AUTO_INCREMENT_NOT_ENABLED' => 'Auto increment is not enabled for this field.',
     'UNSIGNED_OVERFLOW' => 'Overflow occurred for UNSIGNED value.',
     'VALUE_MUST_BE_STRING' => 'Value must be a string.',
+    'VALUE_OUT_OF_RANGE' => 'Value must be in the range of {min} to {max}.',
 ];
