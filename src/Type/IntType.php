@@ -134,7 +134,7 @@ class IntType extends BaseType
         }
 
         // Check if the value exceeds the valid range for INT
-        if (!$this->isUnsigned && ($value < -2147483648 || $value > 2147483647)) {
+        if ($value !== null && !$this->isUnsigned && ($value < -2147483648 || $value > 2147483647)) {
             // Throw an exception if the value is out of range for a signed INT
             throw new \OverflowException($this->translate('VALUE_OUT_OF_RANGE', ['value' => $value, 'min' => -2147483648, 'max' => 2147483647]));
         }

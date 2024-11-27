@@ -7,4 +7,5 @@ return [
     'VALUE_TOO_LONG' => 'Value exceeds the allowed length of {length}.',
     'AUTO_INCREMENT_NOT_ENABLED' => 'Auto increment is not enabled for this field.',
     'UNSIGNED_OVERFLOW' => 'Overflow occurred for UNSIGNED value.',
+    'VALUE_MUST_BE_STRING' => 'Value must be a string.',
 ];
