@@ -9,4 +9,6 @@ return [
     'UNSIGNED_OVERFLOW' => 'Произошло переполнение для UNSIGNED.',
     'VALUE_MUST_BE_STRING' => 'Значение должно быть строкой.',
     'VALUE_OUT_OF_RANGE' => 'Значение должно быть в диапазоне от {min} до {max}.',
+    'VALUE_MUST_BE_DECIMAL' => 'Значение должно быть десятичным числом.',
+    'VALUE_MUST_BE_FLOAT' => 'Значение должно быть вещественным числом.',
 ];

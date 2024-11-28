@@ -12,22 +12,22 @@ use PHPUnit\Framework\Attributes\CoversClass;
 class VarcharTypeTest extends TestCase
 {
     /**
-     * Тестирование успешной установки и получения значения
+     * Test setting and getting a valid string value.
      */
     public function testSetValueAndGetValue(): void
     {
-        $varchar = new VarCharType(255);
+        $varchar = new VarcharType(255);
 
         $varchar->setValue("Hello, world!");
         $this->assertSame("Hello, world!", $varchar->getValue());
     }
 
     /**
-     * Тестирование установления значения, которое превышает максимальную длину
+     * Test setting a value that exceeds the maximum length.
      */
     public function testSetValueTooLong(): void
     {
-        $varchar = new VarCharType(10); // Ограничение длины до 10 символов
+        $varchar = new VarcharType(10); // Limit length to 10 characters
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Value exceeds the allowed length of 10.");
@@ -36,11 +36,11 @@ class VarcharTypeTest extends TestCase
     }
 
     /**
-     * Тестирование установки значения null при условии, что тип не nullable
+     * Test setting a null value when the type is not nullable.
      */
     public function testSetValueNullNotNullable(): void
     {
-        $varchar = new VarCharType(255, false); // Не допускается null
+        $varchar = new VarcharType(255, null); // Null is not allowed
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Value cannot be NULL.");
@@ -49,54 +49,74 @@ class VarcharTypeTest extends TestCase
     }
 
     /**
-     * Тестирование установки значения null при условии, что тип nullable
+     * Test setting a null value when the type is nullable.
      */
     public function testSetValueNullNullable(): void
     {
-        $varchar = new VarCharType(255, true); // Допускается null
+        $varchar = new VarcharType(255, null, true); // Null is allowed
 
         $varchar->setValue(null);
         $this->assertNull($varchar->getValue());
     }
 
     /**
-     * Тестирование установки значения не строкового типа
+     * Test setting a non-string value.
      */
     public function testSetValueNotString(): void
     {
-        $varchar = new VarCharType(255);
+        $varchar = new VarcharType(255);
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Value must be a string.");
 
-        $varchar->setValue(123); // Число вместо строки
+        $varchar->setValue(123); // Number instead of string
     }
 
     /**
-     * Тестирование метода получения SQL-декларации
+     * Test the SQL declaration method.
      */
     public function testGetSQLDeclaration(): void
     {
-        $varchar = new VarCharType(255, true);
+        $varchar = new VarcharType(255, null, true);
         $sql = $varchar->getSQLDeclaration();
 
-        $this->assertSame("VARCHAR(255) NULL", $sql);
+        $this->assertSame("VARCHAR(255)  NULL", $sql);
     }
 
     /**
-     * Тестирование преобразования в массив
+     * Test conversion to an array.
      */
     public function testToArray(): void
     {
-        $varchar = new VarCharType(255, false);
+        $varchar = new VarcharType(255, null);
         $varchar->setValue("Test value");
 
         $expected = [
             'value' => "Test value",
             'length' => 255,
+            'default' => null,
             'nullable' => false,
+            'zero_fill' => false,
         ];
 
         $this->assertSame($expected, $varchar->toArray());
+    }
+
+    /**
+     * Test value sanitization against potential XSS injection.
+     */
+    public function testInjectValue(): void
+    {
+        $varchar = new VarcharType(255, null);
+        $varchar->setValue("<script>alert('xss');</script>");
+        $this->assertSame("alert(&#039;xss&#039;);", $varchar->getValue());
+        $this->assertSame("VARCHAR(255)  NOT NULL", $varchar->getSQLDeclaration());
+        $this->assertSame([
+            'value' => "alert(&#039;xss&#039;);",
+            'length' => 255,
+            'default' => null,
+            'nullable' => false,
+            'zero_fill' => false
+        ], $varchar->toArray());
     }
 }

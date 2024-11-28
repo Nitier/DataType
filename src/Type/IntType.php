@@ -16,49 +16,70 @@ class IntType extends BaseType
      *
      * @var int|null
      */
-    private ?int $value;
+    protected ?int $value;
 
     /**
      * The length of the integer
      *
      * @var int
      */
-    private int $length;
+    protected int $length;
 
     /**
      * The default value of the integer
      *
      * @var int|null
      */
-    private ?int $defaultValue;
+    protected ?int $defaultValue;
 
     /**
      * Whether the integer is unsigned or not
      *
      * @var bool
      */
-    private bool $isUnsigned;
+    protected bool $isUnsigned;
 
     /**
      * Whether the integer is nullable or not
      *
      * @var bool
      */
-    private bool $isNullable;
+    protected bool $isNullable;
 
     /**
      * Whether the integer should auto increment or not
      *
      * @var bool
      */
-    private bool $autoIncrement;
+    protected bool $autoIncrement;
 
     /**
      * Whether the integer should be zero filled or not
      *
      * @var bool
      */
-    private bool $zeroFill;
+    protected bool $zeroFill;
+
+    /**
+     * Minimum value for signed integer
+     *
+     * @var int
+     */
+    protected int $minValue = -2147483648;
+
+    /**
+     * Maximum value for signed integer
+     *
+     * @var int
+     */
+    protected int $maxValue = 2147483647;
+
+    /**
+     * Maximum value for unsigned integer
+     *
+     * @var int
+     */
+    protected int $unsignedMaxValue = 4294967295;
 
     /**
      * Constructor
@@ -88,6 +109,29 @@ class IntType extends BaseType
         $this->autoIncrement = $autoIncrement;
         $this->zeroFill = $zeroFill;
         $this->value = $defaultValue;
+
+        if ($isUnsigned) {
+            $this->minValue = 0;
+            $this->maxValue = $this->unsignedMaxValue;
+        }
+        $this->validateRange();
+    }
+
+    /**
+     * Validate the range of the default value
+     *
+     * @throws \OverflowException
+     */
+    private function validateRange(): void
+    {
+        if (
+            $this->defaultValue !== null &&
+            ($this->defaultValue < $this->minValue || $this->defaultValue > $this->maxValue)
+        ) {
+            throw new \OverflowException(
+                $this->translate('VALUE_OUT_OF_RANGE', ['min' => $this->minValue, 'max' => $this->maxValue])
+            );
+        }
     }
 
     /**
@@ -134,16 +178,14 @@ class IntType extends BaseType
         }
 
         // Check if the value exceeds the valid range for INT
-        if ($value !== null && !$this->isUnsigned && ($value < -2147483648 || $value > 2147483647)) {
+        if ($value !== null && ($value < $this->minValue || $value > $this->maxValue)) {
             // Throw an exception if the value is out of range for a signed INT
-            throw new \OverflowException($this->translate('VALUE_OUT_OF_RANGE', ['value' => $value, 'min' => -2147483648, 'max' => 2147483647]));
+            throw new \OverflowException($this->translate(
+                'VALUE_OUT_OF_RANGE',
+                ['value' => $value, 'min' => $this->minValue, 'max' => $this->maxValue]
+            ));
         }
 
-        // Check if the value exceeds the valid range for UNSIGNED INT
-        if ($this->isUnsigned && ($value < 0 || $value > 4294967295)) {
-            // Throw an exception if the value is out of range for an unsigned INT
-            throw new \OverflowException($this->translate('VALUE_OUT_OF_RANGE', ['value' => $value, 'min' => 0, 'max' => 4294967295]));
-        }
 
         // Check if the value is too long for the integer
         $absoluteValueLength = mb_strlen(ltrim((string) $value, '-'));
@@ -192,6 +234,14 @@ class IntType extends BaseType
                 ['value' => $newValue, 'length' => $this->length]
             ));
         }
+        // Check if the value exceeds the valid range for INT
+        if ($newValue < $this->minValue || $newValue > $this->maxValue) {
+            // Throw an exception if the value is out of range for a signed INT
+            throw new \OverflowException($this->translate(
+                'VALUE_OUT_OF_RANGE',
+                ['value' => $newValue, 'min' => $this->minValue, 'max' => $this->maxValue]
+            ));
+        }
 
         $this->value = $newValue;
     }
@@ -202,6 +252,11 @@ class IntType extends BaseType
      * @return string The SQL declaration string
      */
     public function getSQLDeclaration(): string
+    {
+        // Убираем возможные лишние пробелы в конце строки
+        return rtrim(sprintf("INT(%d) %s", $this->length, $this->getAttributes()));
+    }
+    protected function getAttributes(): string
     {
         $attributes = [];
         if ($this->isUnsigned) {
@@ -217,8 +272,7 @@ class IntType extends BaseType
         $null = $this->isNullable ? 'NULL' : 'NOT NULL';
         $default = $this->defaultValue !== null ? "DEFAULT {$this->defaultValue}" : '';
 
-        // Убираем возможные лишние пробелы в конце строки
-        return rtrim(sprintf("INT(%d) %s %s %s", $this->length, implode(' ', $attributes), $null, $default));
+        return sprintf('%s %s %s', implode(' ', $attributes), $null, $default);
     }
 
     /**
