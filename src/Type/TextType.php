@@ -7,59 +7,82 @@ namespace Nitier\DataType\Type;
 use Nitier\DataType\Abstract\BaseType;
 
 /**
- * Class to represent a TEXT type with additional features
+ * Class to represent a TEXT type with common features.
  */
 class TextType extends BaseType
 {
-    private ?string $value;       // The current value of the TEXT
-    private bool $isNullable;     // Whether the TEXT can be null
-    private ?string $defaultValue; // Default value (rarely used with TEXT)
+    protected ?string $value;
+    protected bool $isNullable;
+    protected ?string $defaultValue;
+    protected string $encoding;
+    protected int $maxLength;
 
     /**
      * Constructor
      *
+     * @param int $maxLength The maximum length allowed for the TEXT
      * @param bool $isNullable Whether the TEXT can be null
      * @param string|null $defaultValue The default value of the TEXT
+     * @param string $encoding The character encoding (e.g., 'UTF-8')
      * @param string $locale The locale for translations
      */
     public function __construct(
+        int $maxLength = 65535,
         bool $isNullable = false,
         ?string $defaultValue = null,
+        string $encoding = 'UTF-8',
         string $locale = 'en'
     ) {
         parent::__construct($locale);
+        $this->maxLength = $maxLength;
         $this->isNullable = $isNullable;
         $this->defaultValue = $defaultValue;
+        $this->encoding = $encoding;
         $this->value = $defaultValue;
     }
 
     /**
-     * Sets the value of the TEXT
+     * Sets the value of the TEXT with encoding and length checks.
      *
      * @param mixed $value The value to set
-     *
-     * @throws \InvalidArgumentException If the value is invalid
+     * @throws \InvalidArgumentException If the value is invalid, encoding doesn't match, or length exceeds limit
      */
     public function setValue(mixed $value): void
     {
-        if ($value === null && !$this->isNullable) {
-            throw new \InvalidArgumentException($this->translate('NULL_NOT_ALLOWED'));
+        if ($value === null) {
+            if (!$this->isNullable) {
+                throw new \InvalidArgumentException($this->translate('NULL_NOT_ALLOWED'));
+            }
+            $this->value = null;
+            return;
         }
 
-        if ($value !== null && !is_string($value)) {
+
+        if (!is_string($value)) {
             throw new \InvalidArgumentException($this->translate('VALUE_MUST_BE_STRING'));
         }
 
-        // Sanitize input to prevent XSS
-        if (is_string($value)) {
-            $value = htmlspecialchars(strip_tags($value), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        if (!mb_check_encoding($value, $this->encoding)) {
+            throw new \InvalidArgumentException($this->translate(
+                'INVALID_ENCODING',
+                ['encoding' => $this->encoding]
+            ));
         }
+
+        if (mb_strlen($value, $this->encoding) > $this->maxLength) {
+            throw new \InvalidArgumentException($this->translate(
+                'VALUE_TOO_LONG',
+                ['length' => $this->maxLength]
+            ));
+        }
+
+        $value = htmlspecialchars(strip_tags($value), ENT_QUOTES | ENT_SUBSTITUTE, $this->encoding);
 
         $this->value = $value;
     }
 
     /**
-     * Gets the current value of the TEXT
+     * Gets the current value of the TEXT.
      *
      * @return string|null The current value
      */
@@ -69,7 +92,7 @@ class TextType extends BaseType
     }
 
     /**
-     * Returns the SQL declaration for the TEXT
+     * Returns the SQL declaration for the TEXT.
      *
      * @return string The SQL declaration
      */
@@ -83,7 +106,7 @@ class TextType extends BaseType
     }
 
     /**
-     * Converts the TEXT to an array
+     * Converts the TEXT to an array.
      *
      * @return array<string, mixed> The array representation
      */
@@ -93,6 +116,8 @@ class TextType extends BaseType
             'value' => $this->value,
             'nullable' => $this->isNullable,
             'default' => $this->defaultValue,
+            'encoding' => $this->encoding,
+            'maxLength' => $this->maxLength,
         ];
     }
 }

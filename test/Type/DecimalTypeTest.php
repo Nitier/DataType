@@ -12,7 +12,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 class DecimalTypeTest extends TestCase
 {
     /**
-     * Тест на установку и получение значения.
+     * Test setting and getting a value.
      */
     public function testSetValueAndGetValue(): void
     {
@@ -22,7 +22,7 @@ class DecimalTypeTest extends TestCase
     }
 
     /**
-     * Тест на установку значения NULL при nullable=true.
+     * Test setting a nullable value.
      */
     public function testNullableValue(): void
     {
@@ -32,7 +32,7 @@ class DecimalTypeTest extends TestCase
     }
 
     /**
-     * Тест на выброс исключения при попытке установить NULL, когда nullable=false.
+     * Test throwing an exception when trying to set a nullable value with nullable=false.
      */
     public function testNullNotAllowed(): void
     {
@@ -44,7 +44,7 @@ class DecimalTypeTest extends TestCase
     }
 
     /**
-     * Тест на выброс исключения при попытке установить некорректное значение.
+     * Test throwing an exception when trying to set an invalid value.
      */
     public function testInvalidValue(): void
     {
@@ -56,19 +56,19 @@ class DecimalTypeTest extends TestCase
     }
 
     /**
-     * Тест на выброс исключения при выходе за пределы precision и scale.
+     * Test throwing an exception when trying to set a value out of range.
      */
     public function testValueOutOfRange(): void
     {
         $this->expectException(\OverflowException::class);
-        $this->expectExceptionMessage('Value must be in the range of 2 to 3.');
+        $this->expectExceptionMessage('Integer part exceeds the allowed length of 3.');
 
-        $decimal = new DecimalType(5, 2); // Максимум 3 знака перед точкой и 2 после
-        $decimal->setValue('12345.67'); // Это выходит за пределы диапазона
+        $decimal = new DecimalType(5, 2); // Maximum 3 digits before the dot and 2 after
+        $decimal->setValue('12345.67'); // Exceeds the range
     }
 
     /**
-     * Тест на генерацию SQL-объявления.
+     * Test generating an SQL declaration.
      */
     public function testGetSQLDeclaration(): void
     {
@@ -78,7 +78,7 @@ class DecimalTypeTest extends TestCase
     }
 
     /**
-     * Тест на генерацию SQL-объявления с NULL.
+     * Test generating an SQL declaration with a nullable value.
      */
     public function testGetSQLDeclarationWithNullable(): void
     {
@@ -88,7 +88,7 @@ class DecimalTypeTest extends TestCase
     }
 
     /**
-     * Тест на преобразование в массив.
+     * Test converting to an array.
      */
     public function testToArray(): void
     {

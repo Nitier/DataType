@@ -7,15 +7,16 @@ namespace Nitier\DataType\Type;
 use Nitier\DataType\Abstract\BaseType;
 
 /**
- * Class to represent a VARCHAR type with additional features
+ * Class to represent a VARCHAR type with additional features and encoding support.
  */
 class VarcharType extends BaseType
 {
-    private ?string $value;  // The current value of the VARCHAR
-    private int $length;     // The maximum length of the VARCHAR
-    private ?string $defaultValue; // The default value if not set
-    private bool $isNullable;  // Whether the VARCHAR can be null
-    private bool $zeroFill;    // Whether to zero fill the VARCHAR
+    private ?string $value;          // The current value of the VARCHAR
+    private int $length;             // The maximum length of the VARCHAR
+    private ?string $defaultValue;   // The default value if not set
+    private bool $isNullable;        // Whether the VARCHAR can be null
+    private bool $zeroFill;          // Whether to zero fill the VARCHAR
+    private string $encoding;        // The character encoding used for the VARCHAR
 
     /**
      * Constructor
@@ -24,6 +25,7 @@ class VarcharType extends BaseType
      * @param string|null $defaultValue The default value of the VARCHAR
      * @param bool $isNullable Whether the VARCHAR can be null
      * @param bool $zeroFill Whether to zero fill the VARCHAR
+     * @param string $encoding The character encoding to use
      * @param string $locale The locale for translations
      */
     public function __construct(
@@ -31,13 +33,21 @@ class VarcharType extends BaseType
         ?string $defaultValue = null,
         bool $isNullable = false,
         bool $zeroFill = false,
+        string $encoding = 'UTF-8',
         string $locale = 'en'
     ) {
         parent::__construct($locale);
+        if ($length > 65535) {
+            throw new \InvalidArgumentException($this->translate(
+                'LENGTH_EXCEEDS_MAX',
+                ['max' => 65535]
+            ));
+        }
         $this->length = $length;
         $this->defaultValue = $defaultValue;
         $this->isNullable = $isNullable;
         $this->zeroFill = $zeroFill;
+        $this->encoding = $encoding;
         $this->value = $defaultValue;
     }
 
@@ -46,34 +56,38 @@ class VarcharType extends BaseType
      *
      * @param mixed $value The value to set
      *
-     * @throws \InvalidArgumentException If the value is invalid
+     * @throws \InvalidArgumentException If the value is invalid or exceeds length in bytes
      */
     public function setValue(mixed $value): void
     {
-        if ($value === null && !$this->isNullable) {
-            throw new \InvalidArgumentException($this->translate('NULL_NOT_ALLOWED'));
+        if ($value === null) {
+            if (!$this->isNullable) {
+                throw new \InvalidArgumentException($this->translate('NULL_NOT_ALLOWED'));
+            }
+            $this->value = null;
+            return;
         }
 
-        if ($value !== null && !is_string($value)) {
+        if (!is_string($value)) {
             throw new \InvalidArgumentException($this->translate('VALUE_MUST_BE_STRING'));
         }
 
-        if ($value !== null && mb_strlen($value) > $this->length) {
+        if (!mb_check_encoding($value, $this->encoding)) {
+            throw new \InvalidArgumentException($this->translate('INVALID_ENCODING', ['encoding' => $this->encoding]));
+        }
+
+        // Проверка длины строки в байтах
+        $byteLength = mb_strlen($value, $this->encoding) * mb_strlen(mb_convert_encoding('a', $this->encoding));
+        if ($byteLength > $this->length) {
             throw new \InvalidArgumentException($this->translate(
-                'VALUE_TOO_LONG',
-                ['value' => $value, 'length' => $this->length]
+                'VALUE_TOO_LONG_IN_BYTES',
+                ['byteLength' => $byteLength, 'maxLength' => $this->length]
             ));
         }
 
         // Sanitize the input to prevent XSS
-        if (is_string($value)) {
-            $value = htmlspecialchars(strip_tags($value), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        }
-
-        if ($value !== null && mb_strlen($value) > $this->length) {
-            throw new \InvalidArgumentException(
-                $this->translate('VALUE_TOO_LONG', ['value' => $value, 'length' => $this->length])
-            );
+        if ($value) {
+            $value = htmlspecialchars(strip_tags($value), ENT_QUOTES | ENT_SUBSTITUTE, $this->encoding);
         }
 
         $this->value = $value;
@@ -102,7 +116,7 @@ class VarcharType extends BaseType
     {
         $attributes = [];
         if ($this->zeroFill) {
-            $attributes[] = 'ZEROFILL'; // Zero fill, rarely used for VARCHAR
+            $attributes[] = 'ZEROFILL';
         }
 
         $default = $this->defaultValue !== null ? "DEFAULT '{$this->defaultValue}'" : '';
@@ -124,6 +138,7 @@ class VarcharType extends BaseType
             'default' => $this->defaultValue,
             'nullable' => $this->isNullable,
             'zero_fill' => $this->zeroFill,
+            'encoding' => $this->encoding,
         ];
     }
 }

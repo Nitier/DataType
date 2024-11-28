@@ -26,7 +26,7 @@ class TextTypeTest extends TestCase
      */
     public function testSetValueNullNotNullable(): void
     {
-        $text = new TextType(false); // Не допускается null
+        $text = new TextType(isNullable: false); // Не допускается null
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Value cannot be NULL.");
@@ -39,7 +39,7 @@ class TextTypeTest extends TestCase
      */
     public function testSetValueNullNullable(): void
     {
-        $text = new TextType(true); // Допускается null
+        $text = new TextType(isNullable: true); // Допускается null
 
         $text->setValue(null);
         $this->assertNull($text->getValue());
@@ -63,7 +63,7 @@ class TextTypeTest extends TestCase
      */
     public function testGetSQLDeclarationNullable(): void
     {
-        $text = new TextType(true, null);
+        $text = new TextType(isNullable: true, defaultValue: null);
         $this->assertSame("TEXT NULL", $text->getSQLDeclaration());
     }
 
@@ -72,7 +72,7 @@ class TextTypeTest extends TestCase
      */
     public function testGetSQLDeclarationWithDefault(): void
     {
-        $text = new TextType(false, "Default text");
+        $text = new TextType(isNullable: false, defaultValue: "Default text");
         $this->assertSame("TEXT NOT NULL DEFAULT 'Default text'", $text->getSQLDeclaration());
     }
 
@@ -81,13 +81,15 @@ class TextTypeTest extends TestCase
      */
     public function testToArray(): void
     {
-        $text = new TextType(true, "Sample text");
+        $text = new TextType(isNullable: true, defaultValue: "Sample text");
         $text->setValue("New value");
 
         $expected = [
             'value' => "New value",
             'nullable' => true,
             'default' => "Sample text",
+            'encoding' => 'UTF-8',
+            'maxLength' => 65535,
         ];
 
         $this->assertSame($expected, $text->toArray());
@@ -102,7 +104,9 @@ class TextTypeTest extends TestCase
         $this->assertSame([
             'value' => "alert(&#039;xss&#039;);",
             'nullable' => false,
-            'default' => null
+            'default' => null,
+            'encoding' => 'UTF-8',
+            'maxLength' => 65535,
         ], $text->toArray());
     }
 }

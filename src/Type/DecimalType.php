@@ -97,11 +97,23 @@ class DecimalType extends BaseType
         $integerPart = $parts[0];
         $decimalPart = $parts[1] ?? '';
 
-        if (mb_strlen($integerPart) > ($this->precision - $this->scale) || mb_strlen($decimalPart) > $this->scale) {
-            throw new \OverflowException($this->translate('VALUE_OUT_OF_RANGE', [
+        $integerMaxLength = $this->precision - $this->scale;
+
+        // Проверка длины целой части
+        if (mb_strlen($integerPart) > $integerMaxLength) {
+            throw new \OverflowException($this->translate('INTEGER_PART_OUT_OF_RANGE', [
                 'value' => $value,
-                'min' => $this->scale,
-                'max' => ($this->precision - $this->scale)
+                'length' => $integerMaxLength,
+                'actual_length' => mb_strlen($integerPart),
+            ]));
+        }
+
+        // Проверка длины дробной части
+        if (mb_strlen($decimalPart) > $this->scale) {
+            throw new \OverflowException($this->translate('DECIMAL_PART_OUT_OF_RANGE', [
+                'value' => $value,
+                'length' => $this->scale,
+                'actual_scale' => mb_strlen($decimalPart),
             ]));
         }
 

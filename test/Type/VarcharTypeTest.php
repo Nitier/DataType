@@ -30,7 +30,7 @@ class VarcharTypeTest extends TestCase
         $varchar = new VarcharType(10); // Limit length to 10 characters
 
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Value exceeds the allowed length of 10.");
+        $this->expectExceptionMessage("Value exceeds the allowed length in bytes of 10. Current length in bytes: 26.");
 
         $varchar->setValue("This is a very long string");
     }
@@ -97,6 +97,7 @@ class VarcharTypeTest extends TestCase
             'default' => null,
             'nullable' => false,
             'zero_fill' => false,
+            'encoding' => 'UTF-8',
         ];
 
         $this->assertSame($expected, $varchar->toArray());
@@ -116,7 +117,8 @@ class VarcharTypeTest extends TestCase
             'length' => 255,
             'default' => null,
             'nullable' => false,
-            'zero_fill' => false
+            'zero_fill' => false,
+            'encoding' => 'UTF-8',
         ], $varchar->toArray());
     }
 }
